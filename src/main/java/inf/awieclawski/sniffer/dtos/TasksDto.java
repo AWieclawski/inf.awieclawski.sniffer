@@ -6,7 +6,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@EqualsAndHashCode(of = "sniffedAddress")
+@EqualsAndHashCode(of = {"sniffedAddress", "uniqueName"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -19,5 +19,9 @@ public class TasksDto {
     private Boolean sniffActive;
 
     private List<String> pathVariables;
+
+    private String cronExpression;
+
+    private String uniqueName;
 
 }

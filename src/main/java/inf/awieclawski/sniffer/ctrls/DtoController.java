@@ -4,6 +4,7 @@ import inf.awieclawski.sniffer.dtos.CronDto;
 import inf.awieclawski.sniffer.dtos.TasksDto;
 import inf.awieclawski.sniffer.rpstr.DataRepository;
 import inf.awieclawski.sniffer.schdlrs.TaskSchedulerImpl;
+import inf.awieclawski.sniffer.xcptns.ControllerException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,7 +23,7 @@ public class DtoController {
 
     @GetMapping(path = "/dtos",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<TasksDto>> dtoList() {
+    public ResponseEntity<List<TasksDto>> allTasks() {
         final List<TasksDto> dtos = dataRepository.getDtos();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
@@ -33,13 +34,26 @@ public class DtoController {
     @PostMapping(path = "/dtos",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<TasksDto>> newDtoList(@RequestBody List<TasksDto> dtoList) {
+    public ResponseEntity<List<TasksDto>> replaceTasks(@RequestBody List<TasksDto> dtoList) {
         checkObject(dtoList);
         final List<TasksDto> dtos = dataRepository.setDtos(dtoList);
+        taskSchedulerBase.initScheduledTasks();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(dtos);
+    }
+
+    @PostMapping(path = "/dto",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TasksDto> newTask(@RequestBody TasksDto dto) {
+        checkObject(dto);
+        taskSchedulerBase.addTaskToSchedulerJobs(dto);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(dto);
     }
 
     @GetMapping(path = "/cron",
@@ -55,9 +69,9 @@ public class DtoController {
     @PostMapping(path = "/cron",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<String>> replaceCron(@RequestBody CronDto cronDto) {
+    public ResponseEntity<List<String>> replaceStandardCron(@RequestBody CronDto cronDto) {
         checkObject(cronDto);
-        List<String> crons = taskSchedulerBase.replaceCronInTask(cronDto.getExpression());
+        List<String> crons = taskSchedulerBase.replaceStandardCron(cronDto.getExpression());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -66,7 +80,7 @@ public class DtoController {
 
     private void checkObject(Object object) {
         if (object == null) {
-            throw new RuntimeException("No entity in the body!");
+            throw new ControllerException("No entity in the body!");
         }
     }
 

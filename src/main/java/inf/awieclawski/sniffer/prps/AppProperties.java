@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Populate list of PropertiesDto from ex. application.yml
+ * Populate list of PropertiesDto from ex. application-dev.yml
  */
 @Component(AppProperties.BEAN_NAME)
 @ConfigurationProperties(prefix = "application")

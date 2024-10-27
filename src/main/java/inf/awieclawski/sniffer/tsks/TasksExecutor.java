@@ -20,7 +20,7 @@ public class TasksExecutor {
 
     private final DataRepository dataRepository;
 
-    private void execute(TasksDto dto) {
+    public void execute(TasksDto dto) {
         if (dto.getSniffActive() != null && dto.getSniffActive()) {
             try {
                 sniffService.doSniff(dto.getSniffedAddress());

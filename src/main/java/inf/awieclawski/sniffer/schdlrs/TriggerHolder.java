@@ -6,18 +6,18 @@ import org.springframework.scheduling.support.CronTrigger;
 
 public class TriggerHolder {
 
-    private CronTrigger triggerObject;
+    private CronTrigger triggerStandard;
 
     public TriggerHolder(CronTrigger trigger) {
-        this.triggerObject = trigger;
+        this.triggerStandard = trigger;
     }
 
-    public void setCroneTrigger(String cronExpression) {
+    public void setStandardTrigger(String cronExpression) {
         CronCheck.checkCron(cronExpression);
-        this.triggerObject = new CronTrigger(cronExpression);
+        this.triggerStandard = new CronTrigger(cronExpression);
     }
 
-    public CronTrigger getTrigger() {
-        return this.triggerObject;
+    public CronTrigger getStandardTrigger() {
+        return this.triggerStandard;
     }
 }

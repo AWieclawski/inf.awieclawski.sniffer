@@ -1,7 +1,10 @@
 package inf.awieclawski.sniffer.schdlrs;
 
 import inf.awieclawski.sniffer.cnfgs.ThreadPoolTaskSchedulerConfig;
+import inf.awieclawski.sniffer.dtos.TasksDto;
+import inf.awieclawski.sniffer.prps.AppProperties;
 import inf.awieclawski.sniffer.tsks.TasksExecutor;
+import inf.awieclawski.sniffer.utls.CronCheck;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,7 +16,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
 @Slf4j
@@ -22,8 +28,8 @@ import java.util.concurrent.ScheduledFuture;
 @DependsOn(TasksExecutor.BEAN_NAME)
 public class TaskSchedulerImpl {
 
+    private final AppProperties appProperties;
     private final TasksExecutor tasksExecutor;
-
     private final ThreadPoolTaskScheduler taskScheduler;
 
     @Qualifier(ThreadPoolTaskSchedulerConfig.CRON_TRIGGER)
@@ -33,28 +39,27 @@ public class TaskSchedulerImpl {
             new IdentityHashMap<>();
 
     @PostConstruct
-    public void scheduleRunnableWithTrigger() {
-        CronTrigger trigger = triggerHolder.getTrigger();
-        addTask(new RunnableTask("Crone Trigger", trigger.getExpression()), trigger);
+    public void initScheduledTasks() {
+        CronTrigger standardTrigger = triggerHolder.getStandardTrigger();
+        appProperties.getDtoList().forEach(dto -> {
+            CronTrigger trigger = dto.getCronExpression() != null ? new CronTrigger(dto.getCronExpression()) : standardTrigger;
+            CronCheck.checkCron(dto.getCronExpression());
+            String message = String.format("Task [%s|%s|%s] ", dto.getSniffedAddress(), dto.getPathVariables(), dto.getCronExpression());
+            addTask(new RunnableTask(message, dto.getUniqueName(), dto), trigger);
+        });
     }
 
-    public List<String> replaceCronInTask(String cronExpression) {
-        triggerHolder.setCroneTrigger(cronExpression);
-        final String[] foundKeyWrapper = new String[1];
-        scheduledTasksMap.entrySet().stream().findFirst().ifPresentOrElse(
-                it -> {
-                    foundKeyWrapper[0] = it.getKey();
-                    if (!Objects.equals(cronExpression, foundKeyWrapper[0])) {
-                        cancelScheduledTask(foundKeyWrapper[0]);
-                    }
-                },
-                () -> addTask(new RunnableTask("Crone Trigger", cronExpression), triggerHolder.getTrigger())
-        );
-        if (foundKeyWrapper[0] != null && !Objects.equals(cronExpression, foundKeyWrapper[0])) {
-            scheduledTasksMap.remove(foundKeyWrapper[0]);
-            addTask(new RunnableTask("Crone Trigger", cronExpression), triggerHolder.getTrigger());
-        }
-        return getScheduledCrons();
+    public List<String> replaceStandardCron(String cronExpression) {
+        triggerHolder.setStandardTrigger(cronExpression);
+        return List.of(cronExpression);
+    }
+
+    public void addTaskToSchedulerJobs(TasksDto dto) {
+        CronTrigger standardTrigger = triggerHolder.getStandardTrigger();
+        CronTrigger trigger = dto.getCronExpression() != null ? new CronTrigger(dto.getCronExpression()) : standardTrigger;
+        CronCheck.checkCron(dto.getCronExpression());
+        String message = String.format("Task [%s|%s|%s] ", dto.getSniffedAddress(), dto.getPathVariables(), dto.getCronExpression());
+        addTask(new RunnableTask(message, dto.getUniqueName(), dto), trigger);
     }
 
     public List<String> getScheduledCrons() {
@@ -81,15 +86,18 @@ public class TaskSchedulerImpl {
 
         private String message;
 
-        public RunnableTask(String message, String id) {
+        private TasksDto dto;
+
+        public RunnableTask(String message, String id, TasksDto dto) {
             this.message = message;
             this.id = id;
+            this.dto = dto;
         }
 
         @Override
         public void run() {
             log.info(">>> {} run start time: [{}]", message, Instant.now().toString());
-            tasksExecutor.doJobs();
+            tasksExecutor.execute(dto);
             log.info("End time: {} <<<", Instant.now().toString());
         }
     }
