@@ -10,6 +10,7 @@ import java.util.List;
 
 /**
  * Populate list of PropertiesDto from ex. application-dev.yml
+ * Do not use it to manipulate Collections - do it in dedicated Repository
  */
 @Component(AppProperties.BEAN_NAME)
 @ConfigurationProperties(prefix = "application")

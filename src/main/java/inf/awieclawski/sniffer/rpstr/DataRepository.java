@@ -1,7 +1,7 @@
 package inf.awieclawski.sniffer.rpstr;
 
-import inf.awieclawski.sniffer.prps.AppProperties;
 import inf.awieclawski.sniffer.dtos.TasksDto;
+import inf.awieclawski.sniffer.prps.AppProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -40,10 +40,16 @@ public class DataRepository {
         return this.tasksDtos;
     }
 
-    public List<TasksDto> setDtos(List<TasksDto> dtoList) {
+    public void setDtos(List<TasksDto> dtoList) {
+        if (this.tasksDtos != null) {
+            this.tasksDtos.clear();
+        }
         this.tasksDtos = Collections.synchronizedList(new ArrayList<>(dtoList));
         log.info("Requests data list after update size: [{}] - OK!", getDtos().size());
-        return tasksDtos;
+    }
+
+    public void addDto(TasksDto dto) {
+        getDtos().add(dto);
     }
 
 }

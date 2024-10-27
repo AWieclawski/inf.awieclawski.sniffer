@@ -2,6 +2,7 @@ package inf.awieclawski.sniffer.cnfgs;
 
 
 import inf.awieclawski.sniffer.xcptns.ControllerException;
+import inf.awieclawski.sniffer.xcptns.TaskSchedulerException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -42,6 +43,12 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     @ExceptionHandler(ControllerException.class)
     public ResponseEntity<Object> handleHttpMessageNotReadable(ControllerException ex, WebRequest request) {
+        String bodyOfResponse = baseErrorMsg + getCause(ex);
+        return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(TaskSchedulerException.class)
+    public ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {
         String bodyOfResponse = baseErrorMsg + getCause(ex);
         return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
     }

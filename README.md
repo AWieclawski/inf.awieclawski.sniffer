@@ -2,7 +2,7 @@
 
 Reactive client request url by scheduler. Can be updated by its own REST API after request: 
 
-`http://localhost:3333/dtos` POST
+`http://localhost:3333/dto/add` POST
 
 Request data check:
 

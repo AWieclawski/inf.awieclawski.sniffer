@@ -2,9 +2,12 @@ package inf.awieclawski.sniffer.schdlrs;
 
 import inf.awieclawski.sniffer.cnfgs.ThreadPoolTaskSchedulerConfig;
 import inf.awieclawski.sniffer.dtos.TasksDto;
-import inf.awieclawski.sniffer.prps.AppProperties;
+import inf.awieclawski.sniffer.rpstr.DataRepository;
 import inf.awieclawski.sniffer.tsks.TasksExecutor;
 import inf.awieclawski.sniffer.utls.CronCheck;
+import inf.awieclawski.sniffer.utls.ReflectionUtils;
+import inf.awieclawski.sniffer.xcptns.TaskSchedulerException;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -12,6 +15,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.scheduling.support.DelegatingErrorHandlingRunnable;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -21,6 +25,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -28,7 +33,7 @@ import java.util.concurrent.ScheduledFuture;
 @DependsOn(TasksExecutor.BEAN_NAME)
 public class TaskSchedulerImpl {
 
-    private final AppProperties appProperties;
+    private final DataRepository dataRepository;
     private final TasksExecutor tasksExecutor;
     private final ThreadPoolTaskScheduler taskScheduler;
 
@@ -41,7 +46,7 @@ public class TaskSchedulerImpl {
     @PostConstruct
     public void initScheduledTasks() {
         CronTrigger standardTrigger = triggerHolder.getStandardTrigger();
-        appProperties.getDtoList().forEach(dto -> {
+        dataRepository.getDtos().forEach(dto -> {
             CronTrigger trigger = dto.getCronExpression() != null ? new CronTrigger(dto.getCronExpression()) : standardTrigger;
             CronCheck.checkCron(dto.getCronExpression());
             String message = String.format("Task [%s|%s|%s] ", dto.getSniffedAddress(), dto.getPathVariables(), dto.getCronExpression());
@@ -52,6 +57,24 @@ public class TaskSchedulerImpl {
     public List<String> replaceStandardCron(String cronExpression) {
         triggerHolder.setStandardTrigger(cronExpression);
         return List.of(cronExpression);
+    }
+
+    public List<TasksDto> replaceScheduledTasks() {
+        scheduledTasksMap.keySet().forEach(this::cancelScheduledTask);
+        scheduledTasksMap.clear();
+        initScheduledTasks();
+        return scheduledTasksMap.values().stream()
+                .map(it -> getRunnableTask((DelegatingErrorHandlingRunnable) it))
+                .map(RunnableTask::getDto).collect(Collectors.toList());
+    }
+
+    private RunnableTask getRunnableTask(DelegatingErrorHandlingRunnable der) {
+        try {
+            return (RunnableTask) ReflectionUtils.getFieldValue(der, "delegate");
+        } catch (Exception e) {
+            log.error("Runnable delegate [{}] can not be get! {}", der.toString(), e.getMessage());
+        }
+        throw new TaskSchedulerException("Runnable delegate error!");
     }
 
     public void addTaskToSchedulerJobs(TasksDto dto) {
@@ -69,14 +92,14 @@ public class TaskSchedulerImpl {
     private void addTask(RunnableTask task, Trigger trigger) {
         ScheduledFuture<?> future = taskScheduler.schedule(task, trigger);
         scheduledTasksMap.put(task.id, future);
-        log.info("Task with cron [{}] added - OK", task.id);
+        log.info("Added Task with cron [{}] - OK", task.id);
     }
 
     private void cancelScheduledTask(String id) {
         ScheduledFuture<?> future = scheduledTasksMap.get(id);
         if (null != future) {
             future.cancel(true);
-            log.warn("Task with cron [{}] canceled - OK", id);
+            log.warn("Canceled Task with cron [{}] - OK", id);
         }
     }
 
@@ -86,6 +109,7 @@ public class TaskSchedulerImpl {
 
         private String message;
 
+        @Getter
         private TasksDto dto;
 
         public RunnableTask(String message, String id, TasksDto dto) {
@@ -100,6 +124,7 @@ public class TaskSchedulerImpl {
             tasksExecutor.execute(dto);
             log.info("End time: {} <<<", Instant.now().toString());
         }
+
     }
 
 }

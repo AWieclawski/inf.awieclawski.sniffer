@@ -1,7 +1,6 @@
 package inf.awieclawski.sniffer.tsks;
 
 import inf.awieclawski.sniffer.dtos.TasksDto;
-import inf.awieclawski.sniffer.rpstr.DataRepository;
 import inf.awieclawski.sniffer.srvcs.SniffService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +17,6 @@ public class TasksExecutor {
 
     private final SniffService sniffService;
 
-    private final DataRepository dataRepository;
-
     public void execute(TasksDto dto) {
         if (dto.getSniffActive() != null && dto.getSniffActive()) {
             try {
@@ -32,12 +29,6 @@ public class TasksExecutor {
             } catch (Exception e) {
                 log.error("Sniffer Error for address: [{}]! {} ", dto.getSniffedAddress(), e.getMessage(), e.getCause());
             }
-        }
-    }
-
-    public void doJobs() {
-        for (TasksDto dto : dataRepository.getDtos()) {
-            execute(dto);
         }
     }
 

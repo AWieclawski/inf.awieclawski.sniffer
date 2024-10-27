@@ -31,24 +31,25 @@ public class DtoController {
                 .body(dtos);
     }
 
-    @PostMapping(path = "/dtos",
+    @PostMapping(path = "/dtos/replace",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<TasksDto>> replaceTasks(@RequestBody List<TasksDto> dtoList) {
         checkObject(dtoList);
-        final List<TasksDto> dtos = dataRepository.setDtos(dtoList);
-        taskSchedulerBase.initScheduledTasks();
+        dataRepository.setDtos(dtoList);
+        final List<TasksDto> dtos = taskSchedulerBase.replaceScheduledTasks();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(dtos);
     }
 
-    @PostMapping(path = "/dto",
+    @PostMapping(path = "/dto/add",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TasksDto> newTask(@RequestBody TasksDto dto) {
         checkObject(dto);
+        dataRepository.addDto(dto);
         taskSchedulerBase.addTaskToSchedulerJobs(dto);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
