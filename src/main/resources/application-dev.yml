@@ -1,0 +1,46 @@
+# spring context variables
+server:
+  port: 8080
+  error:
+    whitelabel:
+      enabled: false
+spring:
+  main:
+    banner-mode: off
+cron:
+  standard: 0 */5 * * * *
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    inf.awieclawski.sniffer.tsks.ScheduledTasks: INFO
+    inf.awieclawski.sniffer.utls.UrlCheck: DEBUG
+    inf.awieclawski.sniffer.rpstr.DataRepository: INFO
+    inf.awieclawski.sniffer.schdlrs.TaskSchedulerImpl: INFO
+base:
+  error:
+    msg: Sniffer error handler
+  wiretapEnabled: true
+# declared dtoList variables
+# https://tecadmin.net/etc-environment-file-in-linux/
+application:
+  dtoList:
+    -
+      uniqueName: baeldung1
+      sniffedAddress: https://www.baeldung.com
+      sniffActive: true
+      pathVariables: cron-expressions,java-cron-expressions-wildcards-diff
+      cronExpression: 30 */1 * * * *
+    -
+      uniqueName: geeksforgeeks2
+      sniffedAddress: https://www.geeksforgeeks.org/
+      sniffActive: true
+      pathVariables: writing-cron-expressions-for-scheduling-tasks,spring-boot-scheduling
+      cronExpression: 15 */1 * * * *
+#    -
+#      uniqueName: ${SNIFFER_UNIQUE}
+#      sniffedAddress: ${SNIFFER_URL}
+#      sniffActive: true
+#      pathVariables: ${SNIFFER_PATH_VARIABLES}
+#      cronExpression: ${SNIFFER_CRON}
+#      keyToken: ${SNIFFER_TOKEN_KEY}
